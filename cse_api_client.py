@@ -26,8 +26,8 @@ class AuthRedirectHandler(urllib2.HTTPRedirectHandler):
     
     def http_error_302(self, req, fp, code, msg, headers):
         if self.requires_auth(headers):
+            # Note: this will only work correctly for GET requests 
             response = self.authenticate(req.get_full_url())
-            logging.info("Completed 3 step auth")
             return response
 
         return urllib2.HTTPRedirectHandler.http_error_302(
@@ -54,21 +54,28 @@ class AuthRedirectHandler(urllib2.HTTPRedirectHandler):
             k, v = line.split("=")
             if k in ["SID", "LSID"]:
                 fields[k] = v
-
         response = self.parent.open(urllib2.Request(
             url="https://www.google.com/accounts/IssueAuthToken",
             data=urllib.urlencode(fields)))
 
-        # Step 3 - TokenAuth
+        # Step 3 - TokenAuth followed by a bunch of redirects (automatically)
         fields = { 
             "auth": response.read().rstrip(),
             "service": "cprose",
             "continue": redirect_url
         }
-
-        return self.parent.open(urllib2.Request(
+        response = self.parent.open(urllib2.Request(
             url="https://www.google.com/accounts/TokenAuth",
             data=urllib.urlencode(fields)))
+
+        logging.info("Completed authentication flow")
+
+        # The CheckCookie page has a <meta> redirect which we assume is taking
+        # us to our desired location.
+        if response.geturl().startswith("https://accounts.google.com/CheckCookie"):
+            return opener.open(redirect_url)
+        else:
+            return response
 
 
 opener = urllib2.build_opener(AuthRedirectHandler,
@@ -86,10 +93,6 @@ def get_xsrf_token():
     xsrf_url = "http://www.google.com/cse/setup/basic?cx=" + cx
     response = opener.open(xsrf_url)
     
-    # This is hack and should go in AuthRedirectHandler 
-    if response.geturl().startswith("https://accounts.google.com/CheckCookie"):
-        response = opener.open(xsrf_url)
-
     # ugly hack parsing
     html = response.read()    
     magic = "var annotationsXsrf='"
