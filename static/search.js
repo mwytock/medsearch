@@ -215,27 +215,31 @@ ui.results.web = function(root) {
                                 if (saving) return;
                                 saving = true;
 
-                                var params = form.serializeArray();
-                                params.push({
+                                var labelParams = form.serializeArray();
+                                labelParams.push({
                                     name: 'url',
                                     value: data.link
                                 });
 
-                                $(this).text('Saving...');
-                                saveLabel(params);
+                                var button = $(this);
+                                button.text('Saving...');
+                                $.ajax({
+                                    url: '/api/label',
+                                    method: 'POST', 
+                                    data: labelParams,
+                                    success: function() {
+                                        el.update(params);
+                                    },
+                                    error: function() {
+                                        alert('Saving label failed')
+                                        button.text('Save');
+                                        saving = false;
+                                    }
+                                });
                             }))
                     .append($('<button>').text('Cancel')
                             .on('click', hidePopup)))
             .show();
-    }
-
-    function saveLabel(params) {
-        $.ajax({
-            url: '/api/label',
-            method: 'POST', 
-            data: params,
-            success: refreshResults
-        });
     }
 
     function hidePopup() {
@@ -244,10 +248,6 @@ ui.results.web = function(root) {
     }
     // So that we can hide the popup on update.
     el.hidePopup = hidePopup;
-
-    function refreshResults() {
-        el.update(params);
-    }
 
     function labels(data) {
         var div = $('<div>').addClass('labels');

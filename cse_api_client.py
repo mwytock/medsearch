@@ -15,18 +15,16 @@ obf_gaia_id = "015533284649053097143"
 cse_id = "eyct-samxvy"
 cx = obf_gaia_id + ":" + cse_id
 
-cookie_jar = cookielib.CookieJar()
+cookie_jar = cookielib.LWPCookieJar()
 
 class AuthRedirectHandler(urllib2.HTTPRedirectHandler):
-    def requires_auth(self, headers):
-        if not "location" in headers:
-            return False
-        return headers.getheaders("location")[0].startswith(
-            "http://www.google.com/accounts/ServiceLogin")
-    
     def http_error_302(self, req, fp, code, msg, headers):
-        if self.requires_auth(headers):
-            # Note: this will only work correctly for GET requests 
+        if not "location" in headers:
+            return 
+
+        location = headers.getheaders("location")[0]
+        logging.info("Redirect %s -> %s", req.get_full_url(), location)
+        if location.startswith("http://www.google.com/accounts/ServiceLogin"):
             response = self.authenticate(req.get_full_url())
             return response
 
@@ -42,7 +40,7 @@ class AuthRedirectHandler(urllib2.HTTPRedirectHandler):
             "service": "cprose"
             }
         response = self.parent.open(urllib2.Request(
-            url="https://www.google.com/accounts/ClientLogin",
+            url="https://accounts.google.com/accounts/ClientLogin",
             data=urllib.urlencode(fields)))
         
         # Step 2 - IssueAuthToken
@@ -55,7 +53,7 @@ class AuthRedirectHandler(urllib2.HTTPRedirectHandler):
             if k in ["SID", "LSID"]:
                 fields[k] = v
         response = self.parent.open(urllib2.Request(
-            url="https://www.google.com/accounts/IssueAuthToken",
+            url="https://accounts.google.com/accounts/IssueAuthToken",
             data=urllib.urlencode(fields)))
 
         # Step 3 - TokenAuth followed by a bunch of redirects (automatically)
@@ -65,17 +63,20 @@ class AuthRedirectHandler(urllib2.HTTPRedirectHandler):
             "continue": redirect_url
         }
         response = self.parent.open(urllib2.Request(
-            url="https://www.google.com/accounts/TokenAuth",
+            url="https://accounts.google.com/accounts/TokenAuth",
             data=urllib.urlencode(fields)))
-
-        logging.info("Completed authentication flow")
 
         # The CheckCookie page has a <meta> redirect which we assume is taking
         # us to our desired location.
         if response.geturl().startswith("https://accounts.google.com/CheckCookie"):
-            return opener.open(redirect_url)
-        else:
-            return response
+            response = opener.open(redirect_url)
+
+        if response.geturl() != redirect_url:
+            raise Exception("AuthRedirectHandler ended up at %s not %s" %
+                            (response.geturl(), redirect_url))
+
+
+        return response
 
 
 opener = urllib2.build_opener(AuthRedirectHandler,
@@ -98,7 +99,7 @@ def get_xsrf_token():
     magic = "var annotationsXsrf='"
     index_a = html.find(magic)
     if index_a == -1:
-        raise Exception("magic string for XSRF parsing not found")
+        raise Exception("Failed to get XSRF token %s" % response.geturl())
 
     index_a += len(magic)
     index_b = html.find("'", index_a)
@@ -107,8 +108,6 @@ def get_xsrf_token():
     return xsrf_token    
 
 def label_request(label):
-    print label.mode
-
     url = ("http://www.google.com/cse/api/%s/annotations/%s?xsrf=%s"
            % (obf_gaia_id, cse_id, get_xsrf_token()))
 
