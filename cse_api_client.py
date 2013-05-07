@@ -118,13 +118,16 @@ def label_request(label):
     else:
         about = label.url
 
+    labels = [{"name": "_cse_" + cse_id}]
+    for l in label.label:
+        labels.append({"name": l})
+
     data = json.dumps({
         "Add": { 
             "Annotations": {
                 "Annotation": [{
                     "about": about,
-                    "label": [{"name": "_cse_" + cse_id},
-                              {"name": label.label}]
+                    "label": labels
                 }]
             }
         }

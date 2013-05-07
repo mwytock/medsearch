@@ -17,7 +17,7 @@ class QueryLogEntry(db.Model):
 class Label(db.Model):
     timestamp = db.DateTimeProperty(auto_now_add=True)
     url = db.StringProperty()
-    label = db.StringProperty()
+    label = db.StringListProperty()
     mode = db.CategoryProperty(choices=("page", "site"))
 
 # handlers
@@ -45,7 +45,7 @@ class RecentApi(webapp2.RequestHandler):
 class LabelApi(webapp2.RequestHandler):
     def post(self):
         label = Label(url=self.request.get("url"),
-                      label=self.request.get("label"),
+                      label=self.request.get_all("label"),
                       mode=self.request.get("mode"))
         label.put()
         cse_api_client.add_label(label)

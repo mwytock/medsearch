@@ -263,8 +263,8 @@ body {
     margin-bottom: 15px;
 }
 
-.popup select {
-    margin-top: 15px;
+.popup .group {
+    margin: 15px 0;
 }
 
 .button-bar {
@@ -273,4 +273,31 @@ body {
 
 .button-bar button {
     margin-right: 8px;
+}
+
+.label-display {
+    line-height: 30px;
+}
+
+.add-label select {
+    margin-top: 10px;
+}
+
+.label {
+    border-radius: 2px;
+    border: 1px solid #ddd;
+    background-color: #f6f6f6;
+    padding: 4px 8px;
+    cursor: default;
+    margin: 0 5px 5px 0;
+    white-space: nowrap;
+}
+
+.label:hover {
+    box-shadow: 0 1px 1px rgba(0, 0, 0, .1);
+    border-color: #c6c6c6;
+    border-radius: 2px;
+    background-color: #e74c3c;
+    color: white;
+    
 }

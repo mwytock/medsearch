@@ -19,9 +19,6 @@ var LABELS = [{
     label: 'guidelines',
     name: 'Guidelines'
 }, {
-    label: 'news',
-    name: 'News'
-}, {
     label: 'reviews',
     name: 'Review articles'
 }, {
@@ -182,30 +179,47 @@ ui.results.web = function(root) {
                     .append($('<p>')
                             .html(data.htmlSnippet.replace(/<br>/g, ''))))
 
+        var labels = LABELS.filter(function(x) { return !x.exclude_from_add; });
+        var selectedLabels = {};
+        var labelsDisplay = $('<div>').addClass('label-display');
+
         var form = $('<form>').addClass('add-label')
-            .append($('<label>')
-                    .append($('<input>')
-                            .attr('checked', 'true')
-                            .attr('type', 'radio')
-                            .attr('name', 'mode')
-                            .attr('value', 'site'))
-                    .append('Label entire site'))
-            .append($('<label>')
-                    .append($('<input>')
-                            .attr('type', 'radio')
-                            .attr('name', 'mode')
-                            .attr('value', 'page'))
-                    .append('Label this page'))
-            .append($('<select>')
-                    .attr('name', 'label')
-                    .html($.map(LABELS, function(l) {
-                        if (l.exclude_from_add)
-                            return null;
-                        
-                        return $('<option>')
-                            .attr('value', l.label)
-                            .text(l.name);
-                    })));
+            .append($('<div>').addClass('group')
+                    .append($('<label>')
+                            .append($('<input>')
+                                    .attr('checked', 'true')
+                                    .attr('type', 'radio')
+                                    .attr('name', 'mode')
+                                    .attr('value', 'site'))
+                            .append('Label entire site'))
+                    .append($('<label>')
+                            .append($('<input>')
+                                    .attr('type', 'radio')
+                                    .attr('name', 'mode')
+                                    .attr('value', 'page'))
+                            .append('Label this page')))
+            .append($('<div>').addClass('group')
+                    .append(labelsDisplay)
+                    .append($('<select>')
+                            .append($('<option>').text('Choose label'))
+                            .append($.map(labels, function(l) {
+                                return $('<option>')
+                                    .attr('value', l.label)
+                                    .text(l.name)
+                            }))
+                            .on('change', function() {
+                                var label = labels[this.selectedIndex-1];
+                                var el = $('<span>').addClass('label')
+                                    .text(label.name)
+                                    .on('click', function() {
+                                        el.remove();
+                                        delete selectedLabels[label.label];
+                                    });
+                                selectedLabels[label.label] = true;
+                                labelsDisplay.append(el).append(' ');
+                                this.selectedIndex = 0;
+                            })))
+        
         
         var saving = false;
         popup.append(form)
@@ -220,6 +234,12 @@ ui.results.web = function(root) {
                                     name: 'url',
                                     value: data.link
                                 });
+                                $.each(selectedLabels, function(name) {
+                                    labelParams.push({
+                                        name: 'label',
+                                        value: name
+                                    });
+                                });
 
                                 var button = $(this);
                                 button.text('Saving...');
@@ -231,7 +251,7 @@ ui.results.web = function(root) {
                                         el.update(params);
                                     },
                                     error: function() {
-                                        alert('Saving label failed')
+                                        alert('Saving label failed');
                                         button.text('Save');
                                         saving = false;
                                     }
