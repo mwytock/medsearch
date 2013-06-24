@@ -7,41 +7,29 @@ var LABELS = [{
     name: 'Web (Blue & Green)',
     exclude_from_add: true
 }, {
-    label: 'overviews',
-    name: 'Overviews'
+    label: 'original_articles',
+    name: 'Original Articles'
 }, {
-    label: 'meta',
-    name: 'Meta-analysis'
+    label: 'systematic_reviews',
+    name: 'Systematic Reviews'
 }, {
-    label: 'research',
-    name: 'Original research'
+    label: 'case_reports',
+    name: 'Case Reports'
 }, {
-    label: 'guidelines',
-    name: 'Guidelines'
+    label: 'practice_guidelines',
+    name: 'Practice Guidelines'
 }, {
-    label: 'reviews',
-    name: 'Review articles'
+    label: 'position_statements',
+    name: 'Position Statements'
 }, {
-    label: 'publiciations',
-    name: 'All publications'
-}, {
-    label: 'rx',
-    name: 'Rx'
-}, {
-    label: 'clinical',
-    name: 'Clinical cases'
-}, {
-    label: 'reference',
-    name: 'Reference'
-}, {
-    label: 'alternative',
-    name: 'Alternative medicine'
-}, {
-    label: 'physical',
-    name: 'Physical exams'
+    label: 'clinical_education',
+    name: 'Clinical Education'
 }, {
     label: 'calculators',
-    name: 'Medical calculators'
+    name: 'Medical Calculators'
+}, {
+    label: 'news',
+    name: 'Medical News'
 }, {
     label: 'images',
     name: 'Images',
@@ -72,9 +60,9 @@ var results = null;
 
 function parseLocation() {
     var params = {};
-    if (!location.search) 
+    if (!location.search)
         return params;
-    
+
     var vars = location.search.slice(1).split('&');
     for (var i=0; i < vars.length; i++) {
         var pair = vars[i].split('=');
@@ -90,10 +78,10 @@ function title(params) {
     return params.q + ' - Stanford Medical Search';
 }
 
-function update(delta, replace) { 
-    if (replace) 
+function update(delta, replace) {
+    if (replace)
         params = delta;
-    else 
+    else
         for (k in delta) params[k] = delta[k];
 
     query.update(params);
@@ -130,7 +118,7 @@ ui.modes = function(root) {
         a.addClass('selected');
         selected = a;
     };
-    
+
     return el;
 };
 
@@ -165,10 +153,10 @@ ui.results.web = function(root) {
     $(document.body)
         .append(popupScreen)
         .append(popup);
-        
+
     function showPopup(data) {
         popupScreen.show();
-        
+
         popup.empty()
             .append($('<h1>').text('Add label'))
             .append($('<div>').addClass('result')
@@ -219,8 +207,8 @@ ui.results.web = function(root) {
                                 labelsDisplay.append(el).append(' ');
                                 this.selectedIndex = 0;
                             })))
-        
-        
+
+
         var saving = false;
         popup.append(form)
             .append($('<div>').addClass('button-bar')
@@ -245,7 +233,7 @@ ui.results.web = function(root) {
                                 button.text('Saving...');
                                 $.ajax({
                                     url: '/api/label',
-                                    method: 'POST', 
+                                    method: 'POST',
                                     data: labelParams,
                                     success: function() {
                                         el.update(params);
@@ -288,7 +276,7 @@ ui.results.web = function(root) {
         }));
         return div;
     }
-    
+
     function result(data) {
         return $('<li>').addClass('result')
             .append($('<h3>')
@@ -301,7 +289,7 @@ ui.results.web = function(root) {
 
     function spelling(data) {
         var q = data.correctedQuery.replace(/more:\w+/, '');
-        
+
         return $('<p>').addClass('spelling')
             .append('Did you mean ')
             .append($('<a>').text(q)
@@ -312,7 +300,7 @@ ui.results.web = function(root) {
                     }))
             .append('?');
     }
-    
+
     function noResults(data) {
         return $('<p>')
             .append('No results for ')
@@ -321,7 +309,7 @@ ui.results.web = function(root) {
 
     el.update = function(params) {
         var query = params.q;
-        if (params.mode && params.mode != 'web') 
+        if (params.mode && params.mode != 'web')
             query += ' more:' + params.mode;
 
         $.ajax({
@@ -332,12 +320,12 @@ ui.results.web = function(root) {
                 cx: CX,
                 q: query
             },
-            success: function(data) {                
+            success: function(data) {
                 root.empty();
-                
+
                 if (data.spelling)
                     root.append(spelling(data.spelling));
-                
+
                 if (data.items) {
                     root.append($('<ol>').addClass('web')
                                 .html($.map(data.items, result)));
@@ -367,7 +355,7 @@ ui.results.images = function(root) {
     }
 
     function result(data) {
-        var cite = data.image.width + ' &times; ' + data.image.height + ' - ' + 
+        var cite = data.image.width + ' &times; ' + data.image.height + ' - ' +
             data.displayLink;
         return $('<li>')
             .append($('<a>')
@@ -379,8 +367,8 @@ ui.results.images = function(root) {
 
     function spelling(data) {
         var q = data.correctedQuery;
-        
-        
+
+
         return $('<p>').addClass('spelling')
             .append('Did you mean ')
             .append($('<a>').text(q)
@@ -436,7 +424,7 @@ ui.results.all = function(root) {
         // Special UI for images
         if (params.mode == 'images')
             images.update(params);
-        else 
+        else
             web.update(params);
     };
 
@@ -460,4 +448,3 @@ $(document).ready(function() {
 window.addEventListener('popstate', function(e) {
     update(e.state ? e.state : parseLocation(), true);
 });
-
