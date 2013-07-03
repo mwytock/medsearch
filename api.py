@@ -17,12 +17,13 @@ class QueryLogEntry(db.Model):
 class Label(db.Model):
     timestamp = db.DateTimeProperty(auto_now_add=True)
     url = db.StringProperty()
-    label = db.StringListProperty()
+    add = db.StringListProperty()
+    remove = db.StringListProperty()
     mode = db.CategoryProperty(choices=("page", "site"))
 
 # handlers
 class LogApi(webapp2.RequestHandler):
-    def post(self):        
+    def post(self):
         log_entry = QueryLogEntry(query=self.request.get("q"))
         log_entry.put()
 
@@ -45,11 +46,12 @@ class RecentApi(webapp2.RequestHandler):
 class LabelApi(webapp2.RequestHandler):
     def post(self):
         label = Label(url=self.request.get("url"),
-                      label=self.request.get_all("label"),
+                      add=self.request.get_all("add"),
+                      remove=self.request.get_all("remove"),
                       mode=self.request.get("mode"))
         label.put()
-        cse_api_client.add_label(label)
-        
+        cse_api_client.add_remove_labels(label)
+
 app = webapp2.WSGIApplication([("/api/log", LogApi),
                                ("/api/recent", RecentApi),
                                ("/api/label", LabelApi)])

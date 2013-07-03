@@ -82,7 +82,7 @@ a:hover {
 
 #front input.gsc-search-button {
     background-color: #980000;
-    background-image: -webkit-linear-gradient(top,#980000,#980000);    
+    background-image: -webkit-linear-gradient(top,#980000,#980000);
     border: 1px solid #666;
 }
 
@@ -94,7 +94,7 @@ a:hover {
     margin-top: 1.5em;
 }
 
-#logo, 
+#logo,
 #lhs {
     width: 200px;
     position: absolute;
@@ -233,7 +233,7 @@ body {
 
 .popup {
     position: fixed;
-    padding: 30px; 
+    padding: 30px;
     border: 1px solid #acacac;
     top: 100px;
     left: 50%;
@@ -251,8 +251,16 @@ body {
 }
 
 .popup label {
-    display: block;
     margin-bottom: 5px;
+}
+
+.popup .mode label {
+   display: block;
+}
+
+.popup .labels label {
+    width: 150px;
+    display: inline-block;
 }
 
 .popup label input {
@@ -299,5 +307,5 @@ body {
     border-radius: 2px;
     background-color: #e74c3c;
     color: white;
-    
+
 }

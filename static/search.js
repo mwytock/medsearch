@@ -168,11 +168,21 @@ ui.results.web = function(root) {
                             .html(data.htmlSnippet.replace(/<br>/g, ''))))
 
         var labels = LABELS.filter(function(x) { return !x.exclude_from_add; });
-        var selectedLabels = {};
+        var existingLabels = {};
         var labelsDisplay = $('<div>').addClass('label-display');
 
+        if (data.labels) {
+            $.each(data.labels, function(i, e) {
+                existingLabels[e.name] = true;
+            });
+        }
+
         var form = $('<form>').addClass('add-label')
-            .append($('<div>').addClass('group')
+            .append($('<input>')
+                    .attr('type', 'hidden')
+                    .attr('name', 'url')
+                    .attr('value', data.link))
+            .append($('<div>').addClass('group mode')
                     .append($('<label>')
                             .append($('<input>')
                                     .attr('checked', 'true')
@@ -186,28 +196,16 @@ ui.results.web = function(root) {
                                     .attr('name', 'mode')
                                     .attr('value', 'page'))
                             .append('Label this page')))
-            .append($('<div>').addClass('group')
-                    .append(labelsDisplay)
-                    .append($('<select>')
-                            .append($('<option>').text('Choose label'))
-                            .append($.map(labels, function(l) {
-                                return $('<option>')
+            .append($('<div>').addClass('group labels')
+                    .append($.map(labels, function(l) {
+                        return $('<label>')
+                            .append($('<input>')
+                                    .attr('type', 'checkbox')
+                                    .attr('name', 'label')
                                     .attr('value', l.label)
-                                    .text(l.name)
-                            }))
-                            .on('change', function() {
-                                var label = labels[this.selectedIndex-1];
-                                var el = $('<span>').addClass('label')
-                                    .text(label.name)
-                                    .on('click', function() {
-                                        el.remove();
-                                        delete selectedLabels[label.label];
-                                    });
-                                selectedLabels[label.label] = true;
-                                labelsDisplay.append(el).append(' ');
-                                this.selectedIndex = 0;
-                            })))
-
+                                    .attr('checked', existingLabels[l.label]))
+                            .append($('<span>').text(l.name));
+                    })))
 
         var saving = false;
         popup.append(form)
@@ -217,16 +215,29 @@ ui.results.web = function(root) {
                                 if (saving) return;
                                 saving = true;
 
-                                var labelParams = form.serializeArray();
-                                labelParams.push({
-                                    name: 'url',
-                                    value: data.link
+                                var labelParams = [];
+                                var selectedLabels = {};
+                                $.each(form.serializeArray(), function(i, e) {
+                                    if (e.name == 'label') {
+                                        selectedLabels[e.value] = true;
+                                    } else {
+                                        labelParams.push(e);
+                                    }
+
                                 });
-                                $.each(selectedLabels, function(name) {
-                                    labelParams.push({
-                                        name: 'label',
-                                        value: name
-                                    });
+
+                                $.each(labels, function(i, l) {
+                                    if (!selectedLabels[l.label] && existingLabels[l.label])
+                                        labelParams.push({
+                                            name: 'remove',
+                                            value: l.label
+                                        });
+
+                                    if (selectedLabels[l.label] && !existingLabels[l.label])
+                                        labelParams.push({
+                                            name: 'add',
+                                            value: l.label
+                                        });
                                 });
 
                                 var button = $(this);

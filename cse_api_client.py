@@ -5,7 +5,7 @@
 import cookielib
 import json
 import logging
-import urllib 
+import urllib
 import urllib2
 import urlparse
 
@@ -20,7 +20,7 @@ cookie_jar = cookielib.LWPCookieJar()
 class AuthRedirectHandler(urllib2.HTTPRedirectHandler):
     def http_error_302(self, req, fp, code, msg, headers):
         if not "location" in headers:
-            return 
+            return
 
         location = headers.getheaders("location")[0]
         logging.info("Redirect %s -> %s", req.get_full_url(), location)
@@ -42,10 +42,10 @@ class AuthRedirectHandler(urllib2.HTTPRedirectHandler):
         response = self.parent.open(urllib2.Request(
             url="https://accounts.google.com/accounts/ClientLogin",
             data=urllib.urlencode(fields)))
-        
+
         # Step 2 - IssueAuthToken
         target_fields = [ "SID", "LSID" ]
-        fields = { 
+        fields = {
             "service": "gaia"
         }
         for line in response.read().split():
@@ -57,7 +57,7 @@ class AuthRedirectHandler(urllib2.HTTPRedirectHandler):
             data=urllib.urlencode(fields)))
 
         # Step 3 - TokenAuth followed by a bunch of redirects (automatically)
-        fields = { 
+        fields = {
             "auth": response.read().rstrip(),
             "service": "cprose",
             "continue": redirect_url
@@ -93,9 +93,9 @@ def get_xsrf_token():
 
     xsrf_url = "http://www.google.com/cse/setup/basic?cx=" + cx
     response = opener.open(xsrf_url)
-    
+
     # ugly hack parsing
-    html = response.read()    
+    html = response.read()
     magic = "var annotationsXsrf='"
     index_a = html.find(magic)
     if index_a == -1:
@@ -105,40 +105,49 @@ def get_xsrf_token():
     index_b = html.find("'", index_a)
     xsrf_token = html[index_a:index_b]
     logging.info("Got XSRF token: " + xsrf_token)
-    return xsrf_token    
+    return xsrf_token
 
 def label_request(label):
-    url = ("http://www.google.com/cse/api/%s/annotations/%s?xsrf=%s"
-           % (obf_gaia_id, cse_id, get_xsrf_token()))
-
+    host = urlparse.urlparse(label.url).netloc
     headers = {"Content-type": "application/json"}
     if label.mode == "site":
         headers["X-MakeUrlPattern"] = "true"
-        about = urlparse.urlparse(label.url).netloc
+        about = host
     else:
         about = label.url
 
-    labels = [{"name": "_cse_" + cse_id}]
-    for l in label.label:
-        labels.append({"name": l})
+    request = {}
+    adds = []
+    removes = []
+    for label_id in label.add:
+        adds.append({
+            "about": about,
+            "label": [{"name": "_cse_" + cse_id}, {"name": label_id}]
+        })
+
+    for label_id in label.remove:
+        removes.append({
+            "about": label.url,
+            "label": [{"name": "_cse_" + cse_id}, {"name": label_id}]
+        })
+        removes.append({
+            "about": host,
+            "label": [{"name": "_cse_" + cse_id}, {"name": label_id}]
+        })
 
     data = json.dumps({
-        "Add": { 
-            "Annotations": {
-                "Annotation": [{
-                    "about": about,
-                    "label": labels
-                }]
-            }
-        }
+        "Add": { "Annotations": { "Annotation": adds }},
+        "Remove": { "Annotations": { "Annotation": removes }}
     })
 
-    return urllib2.Request(url, data, headers)
+    api_url = ("http://www.google.com/cse/api/%s/annotations/%s?xsrf=%s"
+           % (obf_gaia_id, cse_id, get_xsrf_token()))
+    return urllib2.Request(api_url, data, headers)
 
-def add_label(label):
+def add_remove_labels(label):
     num_tries = 2
     for i in range(num_tries):
-        try: 
+        try:
             result = opener.open(label_request(label))
             # Success
             return
@@ -151,12 +160,3 @@ def add_label(label):
 
             # On any other error give up
             raise e
-    
-
-                      
-        
-        
-
-                
-                
-                            
