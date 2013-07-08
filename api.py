@@ -14,6 +14,7 @@ class QueryLogEntry(db.Model):
     query = db.StringProperty()
     date = db.DateTimeProperty(auto_now_add=True)
 
+# NOTE(mwytock): These are really deltas representing the labeling actions
 class Label(db.Model):
     timestamp = db.DateTimeProperty(auto_now_add=True)
     url = db.StringProperty()
@@ -51,6 +52,7 @@ class LabelApi(webapp2.RequestHandler):
                       mode=self.request.get("mode"))
         label.put()
         cse_api_client.add_remove_labels(label)
+
 
 app = webapp2.WSGIApplication([("/api/log", LogApi),
                                ("/api/recent", RecentApi),

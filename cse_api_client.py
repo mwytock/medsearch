@@ -107,33 +107,23 @@ def get_xsrf_token():
     logging.info("Got XSRF token: " + xsrf_token)
     return xsrf_token
 
-def label_request(label):
-    host = urlparse.urlparse(label.url).netloc
+def add_remove_labels_request(label):
+    host = urlparse.urlparse(label.url).netloc + "/*"
     headers = {"Content-type": "application/json"}
     if label.mode == "site":
-        headers["X-MakeUrlPattern"] = "true"
         about = host
     else:
         about = label.url
 
     request = {}
     adds = []
-    removes = []
     for label_id in label.add:
         adds.append({
             "about": about,
             "label": [{"name": "_cse_" + cse_id}, {"name": label_id}]
         })
 
-    for label_id in label.remove:
-        removes.append({
-            "about": label.url,
-            "label": [{"name": "_cse_" + cse_id}, {"name": label_id}]
-        })
-        removes.append({
-            "about": host,
-            "label": [{"name": "_cse_" + cse_id}, {"name": label_id}]
-        })
+    removes = get_annotations_for_removal(label)
 
     data = json.dumps({
         "Add": { "Annotations": { "Annotation": adds }},
@@ -144,11 +134,38 @@ def label_request(label):
            % (obf_gaia_id, cse_id, get_xsrf_token()))
     return urllib2.Request(api_url, data, headers)
 
+def get_annotations_for_removal(label):
+    # Short-circuit in case of nothing to remove
+    if not label.remove:
+        return []
+
+    result = opener.open(get_labels_request(label))
+    result_json = json.load(result)
+
+    remove_dict = {}
+    for label_id in label.remove:
+        remove_dict[label_id] = True
+
+    remove = []
+    for annotation in result_json["Annotation"]:
+        for label_json in annotation["Label"]:
+            if label_json["name"] in remove_dict:
+                remove.append(annotation)
+    return remove
+
+def get_labels_request(label):
+    host = urlparse.urlparse(label.url).netloc
+    headers = {"Accept": "application/json"}
+    api_url = ("http://www.google.com/cse/api/%s/annotations/%s?xsrf=%s&url=%s"
+               "&label=_cse_%s" %
+               (obf_gaia_id, cse_id, get_xsrf_token(), host, cse_id))
+    return urllib2.Request(api_url, headers=headers)
+
 def add_remove_labels(label):
     num_tries = 2
     for i in range(num_tries):
         try:
-            result = opener.open(label_request(label))
+            result = opener.open(add_remove_labels_request(label))
             # Success
             return
         except urllib2.HTTPError as e:
