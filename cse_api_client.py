@@ -32,8 +32,6 @@ class AuthRedirectHandler(urllib2.HTTPRedirectHandler):
             self, req, fp, code, msg, headers)
 
     def authenticate(self, redirect_url):
-        print "REDIRECT URL: " + redirect_url
-
         """Three step process to authenticate as a real user."""
         # Step 1 - ClientLogin
         fields = {
@@ -93,7 +91,6 @@ def get_xsrf_token():
 
     # ugly hack parsing
     html = response.read()
-    print response.getcode()
     magic = "var annotationsXsrf='"
     index_a = html.find(magic)
     if index_a == -1:
