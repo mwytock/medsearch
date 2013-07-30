@@ -24,7 +24,7 @@ class AuthRedirectHandler(urllib2.HTTPRedirectHandler):
 
         location = headers.getheaders("location")[0]
         logging.info("Redirect %s -> %s", req.get_full_url(), location)
-        if location.startswith("http://www.google.com/accounts/ServiceLogin"):
+        if location.startswith("https://www.google.com/accounts/ServiceLogin"):
             response = self.authenticate(req.get_full_url())
             return response
 
@@ -32,6 +32,8 @@ class AuthRedirectHandler(urllib2.HTTPRedirectHandler):
             self, req, fp, code, msg, headers)
 
     def authenticate(self, redirect_url):
+        print "REDIRECT URL: " + redirect_url
+
         """Three step process to authenticate as a real user."""
         # Step 1 - ClientLogin
         fields = {
@@ -71,11 +73,6 @@ class AuthRedirectHandler(urllib2.HTTPRedirectHandler):
         if response.geturl().startswith("https://accounts.google.com/CheckCookie"):
             response = opener.open(redirect_url)
 
-        if response.geturl() != redirect_url:
-            raise Exception("AuthRedirectHandler ended up at %s not %s" %
-                            (response.geturl(), redirect_url))
-
-
         return response
 
 
@@ -91,11 +88,12 @@ def get_xsrf_token():
     if xsrf_token:
         return xsrf_token
 
-    xsrf_url = "http://www.google.com/cse/setup/basic?cx=" + cx
+    xsrf_url = "https://www.google.com/cse/setup/basic?cx=" + cx
     response = opener.open(xsrf_url)
 
     # ugly hack parsing
     html = response.read()
+    print response.getcode()
     magic = "var annotationsXsrf='"
     index_a = html.find(magic)
     if index_a == -1:
@@ -130,7 +128,7 @@ def add_remove_labels_request(label):
         "Remove": { "Annotations": { "Annotation": removes }}
     })
 
-    api_url = ("http://www.google.com/cse/api/%s/annotations/%s?xsrf=%s"
+    api_url = ("https://www.google.com/cse/api/%s/annotations/%s?xsrf=%s"
            % (obf_gaia_id, cse_id, get_xsrf_token()))
     return urllib2.Request(api_url, data, headers)
 
@@ -156,7 +154,7 @@ def get_annotations_for_removal(label):
 def get_labels_request(label):
     host = urlparse.urlparse(label.url).netloc
     headers = {"Accept": "application/json"}
-    api_url = ("http://www.google.com/cse/api/%s/annotations/%s?xsrf=%s&url=%s"
+    api_url = ("https://www.google.com/cse/api/%s/annotations/%s?xsrf=%s&url=%s"
                "&label=_cse_%s" %
                (obf_gaia_id, cse_id, get_xsrf_token(), host, cse_id))
     return urllib2.Request(api_url, headers=headers)
