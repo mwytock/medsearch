@@ -1,10 +1,11 @@
 
 var KEY = 'AIzaSyDzvGIlo_6GmdRasOTnN17hJ9rS3hx_3OA';
 var CX = '015533284649053097143:eyct-samxvy';
+var NEGCX = '015533284649053097143:pqe10xnvwd8';
 
 var LABELS = [{
     label: 'web',
-    name: 'Web (Blue & Green)',
+    name: 'All Results',
     exclude_from_add: true
 }, {
     label: 'original_articles',
@@ -39,6 +40,14 @@ var LABELS = [{
     name: 'Videos',
     exclude_from_add: true
 }, {
+    label: '_cse_exclude_eyct-samxvy',
+    name: 'Eliminate',
+    exclude_from_left: true
+}, {
+    label: 'new',
+    name: 'New',
+    exclude_from_add: true
+}, {
     label: 'google',
     name: 'Google',
     exclude_from_add: true
@@ -52,11 +61,12 @@ var LABELS = [{
     exclude_from_add: true
 }];
 
-// The state of the page and the three UI components
+// The state of the page and the four UI components
 var params = {};
 var modes = null;
 var query = null;
 var results = null;
+var resultNum = null;
 
 function parseLocation() {
     var params = {};
@@ -73,19 +83,35 @@ function parseLocation() {
     return params;
 }
 
+function startNum(params) {
+    if (params.start) {
+	if (typeof(params.start) == 'string') {
+	    return parseInt(params.start);
+	} else {
+	    return params.start;
+	}
+    } else {
+	return 1;
+    }
+}
+
 function title(params) {
     if (!params.q) return 'Stanford Medical Search';
     return params.q + ' - Stanford Medical Search';
 }
 
 function update(delta, replace) {
+    var pageturn = false;
     if (replace)
         params = delta;
     else
-        for (k in delta) params[k] = delta[k];
-
+        for (k in delta) {
+	    if (k == 'start') pageturn = true;
+	    params[k] = delta[k];
+	}
     query.update(params);
     modes.update(params);
+    if (!pageturn) resultNum.update(params);
     results.update(params);
     document.title = title(params);
 }
@@ -100,14 +126,16 @@ ui.modes = function(root) {
     var selected = null;
     var labelToAnchor = {};
     root.html($.map(LABELS, function(x) {
-        var a = $('<a>')
-            .text(x.name)
-            .on('click', function(e) {
-                update({mode: x.label})
-                pushHistory(params);
-            });
-        labelToAnchor[x.label] = a;
-        return $('<li>').append(a);
+	if (!x.exclude_from_left) {
+            var a = $('<a>')
+		.text(x.name)
+		.on('click', function(e) {
+                    update({mode: x.label});
+                    pushHistory(params);
+		});
+            labelToAnchor[x.label] = a;
+            return $('<li>').append(a);
+	}
     }));
 
     var el = {};
@@ -122,6 +150,39 @@ ui.modes = function(root) {
     return el;
 };
 
+
+ui.resultNum = function(root) {
+    root.empty();
+    var startnum = startNum(params);
+    if (startnum > 1) {
+	var prev = $('<a>')
+            .text('Prev')
+            .on('click', function(e) {
+		var startnum = startNum(params);
+		update({start: startnum - 10})
+		pushHistory(params);
+	    });
+	root.append(prev);
+	root.append($('<span>')
+		    .text(" | "));
+    }
+    var next = $('<a>')
+        .text('Next')
+        .on('click', function(e) {
+	    var startnum = startNum(params);
+	    update({start: startnum + 10})
+	    pushHistory(params);
+	});
+
+    root.append(next);
+
+    var el = {};
+    el.update = function(params) {
+	params.start = 0;
+    };
+    return el;
+};
+    
 ui.query = function(root) {
     var text = root.find('#query-text');
 
@@ -185,13 +246,13 @@ ui.results.web = function(root) {
             .append($('<div>').addClass('group mode')
                     .append($('<label>')
                             .append($('<input>')
-                                    .attr('checked', 'true')
                                     .attr('type', 'radio')
                                     .attr('name', 'mode')
                                     .attr('value', 'site'))
                             .append('Label entire site'))
                     .append($('<label>')
                             .append($('<input>')
+                                    .attr('checked', 'true')
                                     .attr('type', 'radio')
                                     .attr('name', 'mode')
                                     .attr('value', 'page'))
@@ -320,6 +381,8 @@ ui.results.web = function(root) {
 
     el.update = function(params) {
         var query = params.q;
+	var startnum = 1;
+	if (params.start) startnum = params.start;
         if (params.mode && params.mode != 'web')
             query += ' more:' + params.mode;
 
@@ -328,7 +391,8 @@ ui.results.web = function(root) {
             dataType: 'jsonp',
             data: {
                 key: KEY,
-                cx: CX,
+		start: startnum,
+                cx: (params.mode == 'new' ? NEGCX : CX),
                 q: query
             },
             success: function(data) {
@@ -454,6 +518,7 @@ $(document).ready(function() {
     modes = ui.modes($('#modes'));
     query = ui.query($('#query'));
     results = ui.results.all($('#results'));
+    resultNum = ui.resultNum($('#resultNum'));
 });
 
 window.addEventListener('popstate', function(e) {

@@ -28,18 +28,34 @@ class LogApi(webapp2.RequestHandler):
         log_entry = QueryLogEntry(query=self.request.get("q"))
         log_entry.put()
 
+
+class AllQueries(webapp2.RequestHandler):
+    def get(self):
+        self.response.headers["Content-type"] = "text/text"
+        q = db.Query(QueryLogEntry).order("-date")
+
+        seen_queries = {}
+        for log_entry in q.run(limit=10000):
+            if log_entry.query in seen_queries:
+                continue
+            self.response.out.write(log_entry.query + "\n")
+            seen_queries[log_entry.query] = True
+
+
 class RecentApi(webapp2.RequestHandler):
     def get(self):
         q = db.Query(QueryLogEntry).order("-date")
 
         seen_queries = {}
         recent = []
-        for log_entry in q.run(limit=30):
+        for log_entry in q.run(limit=1000):
             if log_entry.query in seen_queries:
                 continue
             recent.append({"query": log_entry.query})
             seen_queries[log_entry.query] = True
-
+            if (len(seen_queries) > 30) :
+                break
+            
         self.response.headers["Cache-control"] = "no-store"
         self.response.headers["Content-type"] = "application/json"
         self.response.out.write(json.dumps({"recent": recent}))
@@ -56,4 +72,5 @@ class LabelApi(webapp2.RequestHandler):
 
 app = webapp2.WSGIApplication([("/api/log", LogApi),
                                ("/api/recent", RecentApi),
+                               ("/api/allQueries", AllQueries),
                                ("/api/label", LabelApi)])
