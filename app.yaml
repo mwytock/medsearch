@@ -4,19 +4,18 @@ runtime: python27
 api_version: 1
 threadsafe: true
 
-handlers:
-- url: /
-  static_files: static/front.html
-  upload: static/front.html
+libraries:
+- name: jinja2
+  version: latest
 
-- url: /search
-  static_files: static/search.html
-  upload: static/search.html
+handlers:
+- url: /static
+  static_dir: static
 
 - url: /api/.*
   script: api.app
+  login: required
 
-- url: /
-  static_dir: static
-
-
+- url: /.*
+  script: pages.app
+  login: required

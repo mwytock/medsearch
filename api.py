@@ -5,9 +5,10 @@
 import json
 import webapp2
 
-import cse_api_client
-
 from google.appengine.ext import db
+
+import cse_api_client
+import decorators
 
 # models
 class QueryLogEntry(db.Model):
@@ -24,12 +25,14 @@ class Label(db.Model):
 
 # handlers
 class LogApi(webapp2.RequestHandler):
+    @decorators.check_authorization
     def post(self):
         log_entry = QueryLogEntry(query=self.request.get("q"))
         log_entry.put()
 
 
 class AllQueries(webapp2.RequestHandler):
+    @decorators.check_authorization
     def get(self):
         self.response.headers["Content-type"] = "text/text"
         q = db.Query(QueryLogEntry).order("-date")
@@ -43,6 +46,7 @@ class AllQueries(webapp2.RequestHandler):
 
 
 class RecentApi(webapp2.RequestHandler):
+    @decorators.check_authorization
     def get(self):
         q = db.Query(QueryLogEntry).order("-date")
 
@@ -55,12 +59,13 @@ class RecentApi(webapp2.RequestHandler):
             seen_queries[log_entry.query] = True
             if (len(seen_queries) > 30) :
                 break
-            
+
         self.response.headers["Cache-control"] = "no-store"
         self.response.headers["Content-type"] = "application/json"
         self.response.out.write(json.dumps({"recent": recent}))
 
 class LabelApi(webapp2.RequestHandler):
+    @decorators.check_authorization
     def post(self):
         label = Label(url=self.request.get("url"),
                       add=self.request.get_all("add"),
