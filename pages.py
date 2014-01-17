@@ -6,8 +6,6 @@ import jinja2
 import os
 import webapp2
 
-import decorators
-
 JINJA_ENVIRONMENT = jinja2.Environment(
     loader=jinja2.FileSystemLoader(
         os.path.join(os.path.dirname(__file__), "templates")),
@@ -19,12 +17,10 @@ def render_template(name):
     return template.render({})
 
 class FrontPage(webapp2.RequestHandler):
-    @decorators.check_authorization
     def get(self):
         self.response.write(render_template("front.html"))
 
 class SearchPage(webapp2.RequestHandler):
-    @decorators.check_authorization
     def get(self):
         self.response.write(render_template("search.html"))
 

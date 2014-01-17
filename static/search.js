@@ -42,7 +42,8 @@ var LABELS = [{
 }, {
     label: '_cse_exclude_eyct-samxvy',
     name: 'Eliminate',
-    exclude_from_left: true
+    exclude_from_left: true,
+    exclude_from_add: true
 }, {
     label: 'new',
     name: 'New',
@@ -50,14 +51,6 @@ var LABELS = [{
 }, {
     label: 'google',
     name: 'Google',
-    exclude_from_add: true
-}, {
-    label: 'blue',
-    name: 'Blue',
-    exclude_from_add: true
-}, {
-    label: 'green',
-    name: 'Green',
     exclude_from_add: true
 }];
 
@@ -121,6 +114,24 @@ function pushHistory(params) {
     history.pushState(params, title(params), url);
 }
 
+function getLastPin() {
+    var now = (new Date()).valueOf();
+    var pinTime = parseInt(localStorage.getItem('pinTime'));
+    if (!pinTime)
+        return '';
+    // Expire after 10 minutes
+    if (now - pinTime > 10*60*1000)
+        return '';
+
+    return localStorage.getItem('pin');
+}
+
+function setLastPin(pin) {
+    if (!pin) return;
+    localStorage.setItem('pin', pin);
+    localStorage.setItem('pinTime', (new Date()).valueOf());
+}
+
 var ui = {};
 ui.modes = function(root) {
     var selected = null;
@@ -182,7 +193,7 @@ ui.resultNum = function(root) {
     };
     return el;
 };
-    
+
 ui.query = function(root) {
     var text = root.find('#query-text');
 
@@ -258,6 +269,13 @@ ui.results.web = function(root) {
                                     .attr('value', 'page'))
                             .append('Label this page')))
             .append($('<div>').addClass('group labels')
+                    .append($('<label>')
+                            .append($('<input>')
+                                    .attr('type', 'checkbox')
+                                    .attr('name', 'label')
+                                    .attr('value', '_cse_exclude_eyct-samxvy'))
+                            .append($('<span>').text('Eliminate'))))
+            .append($('<div>').addClass('group labels')
                     .append($.map(labels, function(l) {
                         return $('<label>')
                             .append($('<input>')
@@ -267,6 +285,12 @@ ui.results.web = function(root) {
                                     .attr('checked', existingLabels[l.label]))
                             .append($('<span>').text(l.name));
                     })))
+            .append($('<div>').addClass('group pin')
+                    .append($('<input>')
+                            .attr('name', 'pin')
+                            .attr('size', 4)
+                            .attr('placeholder', 'Pin')
+                            .attr('value', getLastPin())));
 
         var saving = false;
         popup.append(form)
@@ -282,6 +306,8 @@ ui.results.web = function(root) {
                                     if (e.name == 'label') {
                                         selectedLabels[e.value] = true;
                                     } else {
+                                        if (e.name == 'pin')
+                                            setLastPin(e.value);
                                         labelParams.push(e);
                                     }
 
