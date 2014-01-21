@@ -3,9 +3,14 @@ var KEY = 'AIzaSyDzvGIlo_6GmdRasOTnN17hJ9rS3hx_3OA';
 var CX = '015533284649053097143:eyct-samxvy';
 var NEGCX = '015533284649053097143:pqe10xnvwd8';
 
-var LABELS = [{
+var LABELS = [
+{
+    label: 'google',
+    name: 'Google',
+    exclude_from_add: true
+}, {
     label: 'web',
-    name: 'All Results',
+    name: 'Medical Results',
     exclude_from_add: true
 }, {
     label: 'original_articles',
@@ -47,10 +52,6 @@ var LABELS = [{
 }, {
     label: 'new',
     name: 'New',
-    exclude_from_add: true
-}, {
-    label: 'google',
-    name: 'Google',
     exclude_from_add: true
 }];
 
@@ -379,6 +380,7 @@ ui.results.web = function(root) {
         return $('<li>').addClass('result')
             .append($('<h3>')
                     .append($('<a>').attr('href', data.link)
+                            .attr('target', '_blank')
                             .html(data.htmlTitle)))
             .append($('<cite>').html(data.formattedUrl))
             .append($('<p>').html(data.htmlSnippet.replace(/<br>/g, '')))
