@@ -547,6 +547,7 @@ $(document).ready(function() {
     query = ui.query($('#query'));
     results = ui.results.all($('#results'));
     resultNum = ui.resultNum($('#resultNum'));
+    update(parseLocation(), true);
 });
 
 window.addEventListener('popstate', function(e) {
