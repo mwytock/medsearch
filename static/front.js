@@ -16,6 +16,7 @@ function renderRecentQueries(recent) {
 }
 
 $(document).ready(function() {
+    $('#query-text').focus();
     $.ajax({
         url: '/api/recent',
         success: function(data) {

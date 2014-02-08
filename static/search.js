@@ -1,4 +1,6 @@
 
+var history = window.History;
+
 var KEY = 'AIzaSyDzvGIlo_6GmdRasOTnN17hJ9rS3hx_3OA';
 var CX = '015533284649053097143:eyct-samxvy';
 var NEGCX = '015533284649053097143:pqe10xnvwd8';
@@ -20,7 +22,7 @@ var LABELS = [
     name: 'Systematic Reviews'
 }, {
     label: 'case_reports',
-    name: 'Case Reports'
+    name: 'Case Reports',
 }, {
     label: 'practice_guidelines',
     name: 'Practice Guidelines'
@@ -55,15 +57,20 @@ var LABELS = [
     exclude_from_add: true
 }];
 
-// The state of the page and the four UI components
-var params = {};
+// UI components
 var modes = null;
 var query = null;
 var results = null;
 var resultNum = null;
 
+// IE8
+
+
 function parseLocation() {
-    var params = {};
+    var params = {
+        // NOTE(mwytock): Default to Google
+        mode: 'google'
+    };
     if (!location.search)
         return params;
 
@@ -94,43 +101,49 @@ function title(params) {
     return params.q + ' - Stanford Medical Search';
 }
 
-function update(delta, replace) {
+// Update the params state and push it into the history which will cause the URL
+// to update and trigger updateInterface().
+function updateState(delta) {
+    var params = history.getState().data;
     var pageturn = false;
-    if (replace)
-        params = delta;
-    else
-        for (k in delta) {
-	    if (k == 'start') pageturn = true;
-	    params[k] = delta[k];
-	}
-    query.update(params);
-    modes.update(params);
-    if (!pageturn) resultNum.update(params);
-    results.update(params);
-    document.title = title(params);
-}
+    for (k in delta) {
+	if (k == 'start') pageturn = true;
+	params[k] = delta[k];
+    }
+    // Special case for start parameter
+    if (!pageturn) params['start'] = 1;
 
-function pushHistory(params) {
+    // NOTE(mwytock): This will update the URL whih will cause a statechange
+    // event to be triggered and cause the interface to be updated.
     var url = location.pathname + '?' + $.param(params);
     history.pushState(params, title(params), url);
 }
 
+// Update the user interface elements using the state stored in params.
+function updateInterface(params) {
+    query.update(params);
+    modes.update(params);
+    results.update(params);
+    resultNum.update(params);
+    document.title = title(params);
+}
+
+var lastPin = '';
+var pinTime = null;
 function getLastPin() {
     var now = (new Date()).valueOf();
-    var pinTime = parseInt(localStorage.getItem('pinTime'));
     if (!pinTime)
         return '';
     // Expire after 10 minutes
     if (now - pinTime > 10*60*1000)
         return '';
-
-    return localStorage.getItem('pin');
+    return lastPin;
 }
 
 function setLastPin(pin) {
     if (!pin) return;
-    localStorage.setItem('pin', pin);
-    localStorage.setItem('pinTime', (new Date()).valueOf());
+    lastPin = pin;
+    pinTime = (new Date()).valueOf();
 }
 
 var ui = {};
@@ -142,8 +155,7 @@ ui.modes = function(root) {
             var a = $('<a>')
 		.text(x.name)
 		.on('click', function(e) {
-                    update({mode: x.label});
-                    pushHistory(params);
+                    updateState({mode: x.label});
 		});
             labelToAnchor[x.label] = a;
             return $('<li>').append(a);
@@ -164,34 +176,29 @@ ui.modes = function(root) {
 
 
 ui.resultNum = function(root) {
-    root.empty();
-    var startnum = startNum(params);
-    if (startnum > 1) {
-	var prev = $('<a>')
-            .text('Prev')
-            .on('click', function(e) {
-		var startnum = startNum(params);
-		update({start: startnum - 10})
-		pushHistory(params);
-	    });
-	root.append(prev);
-	root.append($('<span>')
-		    .text(" | "));
-    }
+    var start = 1;
+    var prev = $('<a>')
+        .hide()
+        .text('Prev')
+        .on('click', function(e) {
+	    updateState({start: start - 10})
+	});
+    root.append(prev);
+
     var next = $('<a>')
         .text('Next')
         .on('click', function(e) {
-	    var startnum = startNum(params);
-	    update({start: startnum + 10})
-	    pushHistory(params);
-	});
-
+	    updateState({start: start + 10})
+        });
     root.append(next);
 
     var el = {};
     el.update = function(params) {
-	params.start = 0;
+        start = parseInt(params.start);
+        // TODO(mwytock): Possibly enable
+        //prev.toggle(start > 1);
     };
+
     return el;
 };
 
@@ -205,8 +212,7 @@ ui.query = function(root) {
     };
 
     root.find('form').on('submit', function(e) {
-        update({q: text.val()});
-        pushHistory(params);
+        updateState({q: text.val()});
         return false;
     });
 
@@ -364,8 +370,7 @@ ui.results.web = function(root) {
                 div.append($('<a>')
                            .text(e.displayName)
                            .on('click', function() {
-                               update({mode: e.name});
-                               pushHistory(params);
+                               updateState({mode: e.name});
                            }));
             });
             div.append(' - ');
@@ -394,8 +399,7 @@ ui.results.web = function(root) {
             .append('Did you mean ')
             .append($('<a>').text(q)
                     .on('click', function(e) {
-                        update({q: q});
-                        pushHistory(params);
+                        updateState({q: q});
                         return false;
                     }))
             .append('?');
@@ -409,8 +413,6 @@ ui.results.web = function(root) {
 
     el.update = function(params) {
         var query = params.q;
-	var startnum = 1;
-	if (params.start) startnum = params.start;
         if (params.mode && params.mode != 'web')
             query += ' more:' + params.mode;
 
@@ -419,7 +421,7 @@ ui.results.web = function(root) {
             dataType: 'jsonp',
             data: {
                 key: KEY,
-		start: startnum,
+		start: params.start ? params.start : 1,
                 cx: (params.mode == 'new' ? NEGCX : CX),
                 q: query
             },
@@ -476,8 +478,7 @@ ui.results.images = function(root) {
             .append('Did you mean ')
             .append($('<a>').text(q)
                     .on('click', function(e) {
-                        update({q: q});
-                        pushHistory(params);
+                        updateState({q: q});
                         return false;
                     }))
             .append('?');
@@ -542,14 +543,21 @@ ui.results.all = function(root) {
     return el;
 };
 
+var loaded = false;
 $(document).ready(function() {
     modes = ui.modes($('#modes'));
     query = ui.query($('#query'));
     results = ui.results.all($('#results'));
     resultNum = ui.resultNum($('#resultNum'));
-    update(parseLocation(), true);
+
+    var params = parseLocation();
+    history.replaceState(params, title(params),
+                         location.pathname+location.search);
+    updateInterface(params);
+    loaded = true;
 });
 
-window.addEventListener('popstate', function(e) {
-    update(e.state ? e.state : parseLocation(), true);
+history.Adapter.bind(window, 'statechange', function() {
+    if (!loaded) return;
+    updateInterface(history.getState().data);
 });
