@@ -65,7 +65,6 @@ var resultNum = null;
 
 // IE8
 
-
 function parseLocation() {
     var params = {
         // NOTE(mwytock): Default to Google
@@ -120,7 +119,8 @@ function updateState(delta) {
 }
 
 // Update the user interface elements using the state stored in params.
-function updateInterface(params) {
+function updateInterface() {
+    var params = history.getState().data;
     query.update(params);
     modes.update(params);
     results.update(params);
@@ -341,7 +341,7 @@ ui.results.web = function(root) {
                                     method: 'POST',
                                     data: labelParams,
                                     success: function() {
-                                        el.update(params);
+                                        updateInterface();
                                     },
                                     error: function() {
                                         alert('Saving label failed');
@@ -553,11 +553,11 @@ $(document).ready(function() {
     var params = parseLocation();
     history.replaceState(params, title(params),
                          location.pathname+location.search);
-    updateInterface(params);
+    updateInterface();
     loaded = true;
 });
 
 history.Adapter.bind(window, 'statechange', function() {
     if (!loaded) return;
-    updateInterface(history.getState().data);
+    updateInterface();
 });
