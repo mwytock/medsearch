@@ -33,8 +33,32 @@ PINS = [
     "2122", # longnguyen07@gmail.com
     "2123", # ghenders@stanford.edu
     "2124", # mikelin@stanford.edu
-    "2125",
-    "2126",
+    "2125", # jonc@101@stanford.edu
+    "2126", # jlotfi@stantford.edu
+    "2127", # iris.ma@stanford.edu
+    "2128", # kirstenb@stanford.edu
+    "2129", # brainshaller@gmail.com
+    "2130", # alext2@stanford.edu
+    "2131", # postolov@stanford.edu
+    "2132",
+    "2133",
+    "2134",
+    "2135",
+    "2136",
+    "2137",
+    "2138",
+    "2139",
+    "2140",
+    "2141",
+    "2142",
+    "2143",
+    "2144",
+    "2145",
+    "2146",
+    "2147",
+    "2148",
+    "2149",
+    "2150",
     "0987"  # mwytock/testing
 ]
 

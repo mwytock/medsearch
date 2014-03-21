@@ -81,7 +81,12 @@
         </Label>
         <Title>New</Title>
       </FacetItem>
-
+      <FacetItem>
+        <Label name="paywall" mode="FILTER">
+          <IgnoreBackgroundLabels>true</IgnoreBackgroundLabels>
+        </Label>
+        <Title>Paywall</Title>
+      </FacetItem>
       <FacetItem>
         <Label name="google" mode="BOOST">
           <Rewrite></Rewrite>
@@ -93,6 +98,7 @@
     <BackgroundLabels>
       <Label name="_cse_eyct-samxvy" mode="FILTER" />
       <Label name="_cse_exclude_eyct-samxvy" mode="ELIMINATE" />
+      <Label name="paywall" mode="ELIMINATE" />
     </BackgroundLabels>
   </Context>
   <LookAndFeel code="4" nonprofit="true" googlebranding="watermark" element_layout="4" theme="7" custom_theme="false" text_font="Arial, sans-serif" url_length="full" enable_cse_thumbnail="true" promotion_url_length="full" ads_layout="1">

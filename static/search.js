@@ -50,11 +50,15 @@ var LABELS = [
     label: '_cse_exclude_eyct-samxvy',
     name: 'Eliminate',
     exclude_from_left: true,
-    exclude_from_add: true
+    negative_label: true
 }, {
     label: 'new',
     name: 'New',
     exclude_from_add: true
+}, {
+    label: 'paywall',
+    name: 'Paywall',
+    negative_label: true
 }];
 
 // UI components
@@ -247,6 +251,8 @@ ui.results.web = function(root) {
                             .html(data.htmlSnippet.replace(/<br>/g, ''))))
 
         var labels = LABELS.filter(function(x) { return !x.exclude_from_add; });
+        var posLabels = labels.filter(function(x) { return !x.negative_label; });
+        var negLabels = labels.filter(function(x) { return x.negative_label; });
         var existingLabels = {};
         var labelsDisplay = $('<div>').addClass('label-display');
 
@@ -276,22 +282,9 @@ ui.results.web = function(root) {
                                     .attr('value', 'page'))
                             .append('Label this page')))
             .append($('<div>').addClass('group labels')
-                    .append($('<label>')
-                            .append($('<input>')
-                                    .attr('type', 'checkbox')
-                                    .attr('name', 'label')
-                                    .attr('value', '_cse_exclude_eyct-samxvy'))
-                            .append($('<span>').text('Eliminate'))))
+                    .append(labelCheckboxes(negLabels, existingLabels)))
             .append($('<div>').addClass('group labels')
-                    .append($.map(labels, function(l) {
-                        return $('<label>')
-                            .append($('<input>')
-                                    .attr('type', 'checkbox')
-                                    .attr('name', 'label')
-                                    .attr('value', l.label)
-                                    .attr('checked', existingLabels[l.label]))
-                            .append($('<span>').text(l.name));
-                    })))
+                    .append(labelCheckboxes(posLabels, existingLabels)))
             .append($('<div>').addClass('group pin')
                     .append($('<input>')
                             .attr('name', 'pin')
@@ -379,6 +372,18 @@ ui.results.web = function(root) {
             showPopup(data);
         }));
         return div;
+    }
+
+    function labelCheckboxes(labels, existingLabels) {
+        return $.map(labels, function(l) {
+            return $('<label>')
+                .append($('<input>')
+                        .attr('type', 'checkbox')
+                        .attr('name', 'label')
+                        .attr('value', l.label)
+                        .attr('checked', existingLabels[l.label]))
+                .append($('<span>').text(l.name));
+        });
     }
 
     function result(data) {
