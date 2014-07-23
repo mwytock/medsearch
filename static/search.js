@@ -1,6 +1,4 @@
 
-var history = window.History;
-
 var KEY = 'AIzaSyDzvGIlo_6GmdRasOTnN17hJ9rS3hx_3OA';
 var CX = '015533284649053097143:eyct-samxvy';
 var NEGCX = '015533284649053097143:pqe10xnvwd8';
@@ -107,7 +105,7 @@ function title(params) {
 // Update the params state and push it into the history which will cause the URL
 // to update and trigger updateInterface().
 function updateState(delta) {
-    var params = history.getState().data;
+    var params = History.getState().data;
     var pageturn = false;
     for (k in delta) {
 	if (k == 'start') pageturn = true;
@@ -119,12 +117,12 @@ function updateState(delta) {
     // NOTE(mwytock): This will update the URL whih will cause a statechange
     // event to be triggered and cause the interface to be updated.
     var url = location.pathname + '?' + $.param(params);
-    history.pushState(params, title(params), url);
+    History.pushState(params, title(params), url);
 }
 
 // Update the user interface elements using the state stored in params.
 function updateInterface() {
-    var params = history.getState().data;
+    var params = History.getState().data;
     query.update(params);
     modes.update(params);
     results.update(params);
@@ -556,13 +554,13 @@ $(document).ready(function() {
     resultNum = ui.resultNum($('#resultNum'));
 
     var params = parseLocation();
-    history.replaceState(params, title(params),
+    History.replaceState(params, title(params),
                          location.pathname+location.search);
     updateInterface();
     loaded = true;
 });
 
-history.Adapter.bind(window, 'statechange', function() {
+History.Adapter.bind(window, 'statechange', function() {
     if (!loaded) return;
     updateInterface();
 });
